@@ -21,9 +21,21 @@ int main(int argc, char *argv[]) {
   }
 
   PhotoList photos = _load_photo_list(argv[1]);
-  printf("Found %d photos\n", photos.count);
-  for (int i = 0; i < photos.count; i++) {
-    printf("%s\n", photos.files[i]);
+  _app_setup();
+
+  int currentPhoto = 0;
+  Image photo = LoadImage(photos.files[currentPhoto]);
+  Texture2D tex = LoadTextureFromImage(photo);
+  UnloadImage(photo);
+
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    {
+      ClearBackground(BLACK);
+      DrawTexture(tex, (GetScreenWidth() - tex.width) / 2,
+                  (GetScreenHeight() - tex.height) / 2, WHITE);
+    }
+    EndDrawing();
   }
 
   _free_photo_list(&photos);
@@ -43,7 +55,7 @@ void _app_setup() {
 }
 
 bool _is_file_photo(const char *filename) {
-  const char *dot = strchr(filename, '.');
+  const char *dot = strrchr(filename, '.');
   if (!dot || dot == filename)
     return false;
 
@@ -76,11 +88,12 @@ PhotoList _load_photo_list(const char *folder_name) {
   while ((entry = readdir(dp))) {
     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
       continue;
-
     if (_is_file_photo(entry->d_name)) {
+      char path[PATH_MAX];
+      snprintf(path, sizeof(path), "%s/%s", folder_name, entry->d_name);
+
       list.files = realloc(list.files, sizeof(char *) * (list.count + 1));
-      list.files[list.count] = malloc(strlen(entry->d_name) + 1);
-      strcpy(list.files[list.count], entry->d_name);
+      list.files[list.count] = strdup(path);
       list.count++;
     }
   }
